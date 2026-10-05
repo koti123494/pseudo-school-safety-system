@@ -108,7 +108,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             <div>
               <div className="flex items-center gap-1">
                 <span className="font-extrabold text-sm sm:text-base tracking-tight text-textMain group-hover:text-secondaryAccent transition-colors">
-                  KOTI'S ACADEMY
+                  KOTI&apos;S ACADEMY
                 </span>
               </div>
               <div className="hidden sm:flex items-center gap-1 text-[10px] text-textMuted font-mono">

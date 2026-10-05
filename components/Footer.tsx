@@ -12,7 +12,7 @@ export default function Footer() {
               <Code2 className="w-4 h-4" />
             </div>
             <span className="font-bold text-textMain tracking-tight">
-              Koti's Python Academy <span className="text-secondaryAccent font-mono text-xs">— Python Edition</span>
+              Koti&apos;s Python Academy <span className="text-secondaryAccent font-mono text-xs">— Python Edition</span>
             </span>
           </div>
           <p className="text-xs text-textMuted max-w-md font-medium">
@@ -22,7 +22,7 @@ export default function Footer() {
             2,000+ Coding Problems • 55 Book Chapters • 16 Recruiters • Zero Login • Auto-Saved Locally
           </div>
           <div className="pt-2 text-xs text-textMuted font-medium">
-            © 2025 Koti's Python Academy - Built with ❤️ by Koti | Founder & Python Instructor
+            © 2025 Koti&apos;s Python Academy - Built with ❤️ by Koti | Founder & Python Instructor
           </div>
         </div>
 

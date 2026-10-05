@@ -33,11 +33,11 @@ export default function AboutKoti() {
             </div>
 
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-textMain tracking-tight">
-              Hi, I'm <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Koti</span> — Founder of Koti's Python Academy
+              Hi, I&apos;m <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Koti</span> — Founder of Koti&apos;s Python Academy
             </h2>
 
             <p className="text-sm sm:text-base text-slate-200/90 leading-relaxed max-w-3xl">
-              Hi, I'm Koti - Founder of Koti's Python Academy. I teach Python in simple Telugu + English with hands-on coding playground.
+              Hi, I&apos;m Koti - Founder of Koti&apos;s Python Academy. I teach Python in simple Telugu + English with hands-on coding playground.
             </p>
 
             {/* Feature pills */}

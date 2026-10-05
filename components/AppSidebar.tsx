@@ -71,7 +71,7 @@ function SidebarInner({ isOpen, onClose, onToggle, isDesktopCollapsed }: Sidebar
             </div>
             <div>
               <div className="flex items-center gap-1">
-                <span className="font-extrabold text-sm text-textMain tracking-tight">KOTI'S ACADEMY</span>
+                <span className="font-extrabold text-sm text-textMain tracking-tight">KOTI&apos;S ACADEMY</span>
               </div>
               <div className="text-[10px] text-textMuted font-mono">Python Edition</div>
             </div>

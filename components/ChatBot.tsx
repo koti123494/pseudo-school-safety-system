@@ -78,7 +78,7 @@ export default function ChatBot() {
             <div className="flex items-center gap-2">
               <span className="text-lg">🐍</span>
               <div>
-                <div className="text-sm leading-tight font-extrabold">Koti's AI Assistant</div>
+                <div className="text-sm leading-tight font-extrabold">Koti&apos;s AI Assistant</div>
                 <div className="text-[10px] text-blue-100 font-normal">Online • Python Doubt Solver</div>
               </div>
             </div>
