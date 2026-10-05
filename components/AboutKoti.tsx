@@ -16,7 +16,7 @@ export default function AboutKoti() {
             <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 rounded-2xl overflow-hidden border-2 border-secondaryAccent/60 shadow-lg shadow-blue-500/20 bg-cardBg">
               <img
                 src="/founder_candidate1.jpg"
-                alt="Koti - Founder of Koti's Python Academy"
+                alt="Koti - Founder of Koti&apos;s Python Academy"
                 className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
               />
             </div>
