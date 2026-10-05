@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-bg: #0b0f19;
+  --secondary-bg: #111827;
+  --surface-bg: #162032;
+  --surface-hover: #1e2a42;
+  --card-bg: #131b2a;
+  --code-bg: #0f1624;
+  --primary-accent: #8b5cf6;
+  --secondary-accent: #a78bfa;
+  --accent-glow: rgba(139, 92, 246, 0.3);
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border-subtle: #1e293b;
+  --border-highlight: #334155;
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+}
+
+html.dark {
+  --primary-bg: #0b0f19;
+  --secondary-bg: #111827;
+  --surface-bg: #162032;
+  --surface-hover: #1e2a42;
+  --card-bg: #131b2a;
+  --code-bg: #0f1624;
+  --primary-accent: #8b5cf6;
+  --secondary-accent: #a78bfa;
+  --accent-glow: rgba(139, 92, 246, 0.3);
+  --success: #22c55e;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border-subtle: #1e293b;
+  --border-highlight: #334155;
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+}
+
+html.light {
+  --primary-bg: #f8fafc;
+  --secondary-bg: #ffffff;
+  --surface-bg: #f1f5f9;
+  --surface-hover: #e2e8f0;
+  --card-bg: #ffffff;
+  --code-bg: #0f172a;
+  --primary-accent: #7c3aed;
+  --secondary-accent: #6d28d9;
+  --accent-glow: rgba(124, 58, 237, 0.15);
+  --success: #16a34a;
+  --error: #dc2626;
+  --warning: #d97706;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-subtle: #e2e8f0;
+  --border-highlight: #cbd5e1;
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+/* Light mode overrides for legacy hardcoded colors */
+html.light .text-white:not(button):not(button *):not([class*="bg-primary"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-amber"]):not([class*="from-primary"]):not(.keep-white) {
+  color: #0f172a;
+}
+
+html.light button.bg-primaryAccent,
+html.light button[class*="from-primaryAccent"],
+html.light [class*="bg-primaryAccent"] .text-white,
+html.light [class*="from-primaryAccent"] .text-white,
+html.light .keep-white {
+  color: #ffffff !important;
+}
+
+html.light .text-zinc-100,
+html.light .text-zinc-200,
+html.light .text-zinc-300 {
+  color: #1e293b;
+}
+
+html.light .text-zinc-400,
+html.light .text-zinc-500 {
+  color: #64748b;
+}
+
+html.light .bg-\[\#161625\],
+html.light .bg-\[\#181827\],
+html.light .bg-\[\#12121c\],
+html.light .bg-\[\#12121a\],
+html.light .bg-\[\#0e0e16\],
+html.light .bg-\[\#13131e\],
+html.light .bg-\[\#0d0d14\] {
+  background-color: var(--surface-bg) !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--primary-bg);
+  color: var(--text-main);
+  min-height: 100vh;
+  font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+::selection {
+  background: var(--primary-accent);
+  color: #ffffff;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-highlight);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-accent);
+}
+
+/* Smooth UI Card & Button Hover Lift */
+.card-hover {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-highlight);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Code block fonts */
+.font-code {
+  font-family: var(--font-jetbrains), "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+
+/* Subtle Shimmer for Highlighting */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-bg {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    rgba(255, 255, 255) 0%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s infinite;
+}
+
+/* Floating decorative background petals/particles */
+@keyframes floatParticle {
+  0% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translateY(-16px) rotate(180deg);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(0px) rotate(360deg);
+    opacity: 0.15;
+  }
+}
+
+.floating-petal {
+  animation: floatParticle 10s ease-in-out infinite;
+  pointer-events: none;
+}
