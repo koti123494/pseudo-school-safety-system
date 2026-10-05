@@ -480,7 +480,7 @@ export default function PracticePage() {
     <Suspense
       fallback={
         <div className="max-w-7xl mx-auto p-12 text-center text-textMuted font-mono text-sm">
-          Loading PseudoCode Mastery Practice Workspace...
+          Loading Koti's Python Academy Practice Workspace...
         </div>
       }
     >

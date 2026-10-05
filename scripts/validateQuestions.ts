@@ -13,7 +13,7 @@ const rawData = fs.readFileSync(questionsPath, "utf-8");
 const questions: Question[] = JSON.parse(rawData);
 
 console.log("==========================================");
-console.log("   PSEUDOCODE MASTERY VALIDATION SUITE    ");
+console.log("       KOTI'S ACADEMY VALIDATION SUITE    ");
 console.log("==========================================");
 
 const errors: string[] = [];

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import AppLayoutShell from "@/components/AppLayoutShell";
+import ChatBot from "@/components/ChatBot";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,23 +23,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "PseudoCode Mastery — Python Edition | Learn Python. Practice Logic. Crack Interviews.",
+  title: "Koti's Python Academy - Learn Python with Koti",
   description:
-    "Complete Python Learning and Placement Preparation Platform with 2,000+ Python Coding Problems, 55-Chapter Python Mastery Book, 16 Company Tracks, and 1,000+ Pseudocode Traces.",
-  keywords: [
-    "Python Coding Practice",
-    "Pseudocode",
-    "Python",
-    "TCS NQT",
-    "Infosys",
-    "Wipro",
-    "Accenture",
-    "Capgemini",
-    "Cognizant",
-    "LeetCode",
-    "Placement Preparation",
-  ],
-  authors: [{ name: "PseudoCode Mastery Team" }],
+    "Interactive Python learning platform by Koti. Learn Python in Telugu & English with live playground.",
+  keywords: ["Koti Python", "Python Telugu", "Learn Python", "Koti Academy"],
+  authors: [{ name: "Koti" }],
 };
 
 export default function RootLayout({
@@ -84,6 +73,7 @@ export default function RootLayout({
       </head>
       <body className="bg-primaryBg text-textMain antialiased flex flex-col min-h-screen">
         <AppLayoutShell>{children}</AppLayoutShell>
+        <ChatBot />
       </body>
     </html>
   );

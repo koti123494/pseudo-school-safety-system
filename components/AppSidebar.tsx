@@ -66,17 +66,12 @@ function SidebarInner({ isOpen, onClose, onToggle, isDesktopCollapsed }: Sidebar
         {/* Brand Header */}
         <div className="h-16 flex items-center justify-between px-5 border-b border-borderSubtle bg-secondaryBg shrink-0">
           <Link href="/" onClick={onClose} className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primaryAccent to-secondaryAccent p-0.5 shadow-glow">
-              <div className="w-full h-full bg-cardBg rounded-[10px] flex items-center justify-center">
-                <Code2 className="w-4 h-4 text-secondaryAccent" />
-              </div>
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-base shadow-glow">
+              K
             </div>
             <div>
               <div className="flex items-center gap-1">
-                <span className="font-extrabold text-sm text-textMain tracking-tight">PseudoCode</span>
-                <span className="font-extrabold text-sm bg-gradient-to-r from-primaryAccent to-secondaryAccent bg-clip-text text-transparent tracking-tight">
-                  Mastery
-                </span>
+                <span className="font-extrabold text-sm text-textMain tracking-tight">KOTI'S ACADEMY</span>
               </div>
               <div className="text-[10px] text-textMuted font-mono">Python Edition</div>
             </div>

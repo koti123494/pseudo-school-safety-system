@@ -102,18 +102,13 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
           )}
 
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primaryAccent to-secondaryAccent p-0.5 shadow-glow transition-transform group-hover:scale-105">
-              <div className="w-full h-full bg-cardBg rounded-[10px] flex items-center justify-center">
-                <Code2 className="w-4 h-4 text-secondaryAccent" />
-              </div>
+            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-base shadow-glow transition-transform group-hover:scale-105">
+              K
             </div>
             <div>
               <div className="flex items-center gap-1">
                 <span className="font-extrabold text-sm sm:text-base tracking-tight text-textMain group-hover:text-secondaryAccent transition-colors">
-                  PseudoCode
-                </span>
-                <span className="font-extrabold text-sm sm:text-base tracking-tight bg-gradient-to-r from-primaryAccent to-secondaryAccent bg-clip-text text-transparent">
-                  Mastery
+                  KOTI'S ACADEMY
                 </span>
               </div>
               <div className="hidden sm:flex items-center gap-1 text-[10px] text-textMuted font-mono">
