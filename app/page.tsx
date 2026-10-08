@@ -44,6 +44,7 @@ import {
 } from "@/lib/storage";
 import { CODING_TOPICS, CodingTopic } from "@/types";
 import ActivityHeatmap from "@/components/ActivityHeatmap";
+import StreakLeaderboard from "@/components/StreakLeaderboard";
 
 export default function HomePage() {
   const [attemptedPseudo, setAttemptedPseudo] = useState(0);
@@ -117,9 +118,40 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="flex flex-col w-full overflow-hidden space-y-12 pb-16">
+    <div className="flex flex-col w-full overflow-hidden space-y-8 pb-16">
+      {/* Top Header Bar: Streak, Leaderboard button, Mock Test button */}
+      <div className="w-full bg-secondaryBg/90 border-b border-borderSubtle py-2.5 px-4 sm:px-6 lg:px-8 shadow-sm backdrop-blur-md sticky top-16 z-20">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            <span className="text-xs font-mono font-bold text-accentPurple px-2.5 py-1 rounded-lg bg-accentPurple/15 border border-accentPurple/30">
+              ⚡ 5,000 Questions Bank
+            </span>
+            <StreakLeaderboard />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/mock-test"
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-gradient-to-r from-accentPurple to-primary hover:opacity-90 text-white font-mono text-xs font-bold transition-all shadow-md active:scale-95"
+            >
+              <Play className="w-3.5 h-3.5 fill-white" />
+              <span>Start Mock Test</span>
+              <span className="px-1.5 py-0.2 rounded bg-white/20 text-[10px]">30m</span>
+            </Link>
+
+            <Link
+              href="/practice"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-surfaceBorder hover:bg-white/10 text-textMain font-mono text-xs font-semibold transition-colors border border-borderSubtle"
+            >
+              <Code2 className="w-3.5 h-3.5 text-accentCyan" />
+              <span>Practice 5,000</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Welcome Hero Section */}
-      <section className="relative pt-12 pb-16 md:pt-16 md:pb-20 px-4 sm:px-6 lg:px-8 border-b border-borderSubtle bg-gradient-to-b from-primaryBg via-surfaceBg/20 to-secondaryBg">
+      <section className="relative pt-6 pb-16 md:pt-10 md:pb-20 px-4 sm:px-6 lg:px-8 border-b border-borderSubtle bg-gradient-to-b from-primaryBg via-surfaceBg/20 to-secondaryBg">
         <div className="max-w-7xl mx-auto relative z-10 space-y-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             {/* Left Hero Text (7 Cols) */}
@@ -127,40 +159,32 @@ export default function HomePage() {
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surfaceBg border border-borderHighlight shadow-sm">
                 <span className="w-2 h-2 rounded-full bg-success animate-ping" />
                 <span className="text-xs font-mono font-bold tracking-wider uppercase text-secondaryAccent">
-                  WELCOME TO PYTHON MASTERY
+                  WELCOME TO PSEUDO MASTER
                 </span>
                 <span className="text-zinc-600">|</span>
-                <span className="text-xs text-textMuted font-mono">Platform v2.0</span>
+                <span className="text-xs text-textMuted font-mono">LeetCode + InterviewBit Edition</span>
               </div>
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-textMain tracking-tight leading-[1.15]">
-                Learn Python. Practice Logic.{" "}
+                5,000 Pseudo Questions.{" "}
                 <span className="block mt-1 bg-gradient-to-r from-primaryAccent via-secondaryAccent to-primaryAccent bg-clip-text text-transparent">
-                  Crack Placement Interviews.
+                  Crack TCS NQT & Top MNCs.
                 </span>
               </h1>
 
               <p className="text-xs sm:text-sm text-textMuted max-w-2xl leading-relaxed">
-                The unified learning workspace engineered for campus placements. 2,000+ Python coding practice problems with automated test cases, a 55-chapter Python Mastery Book, 16 verified company tracks, and 1,000+ pseudocode logic traces.
+                The ultimate algorithmic logic workspace. 5,000 pure pseudocode questions with company filters (TCS 3600+, Infosys 2800+, Wipro 1300+), real-time 30-minute Mock Tests, Voice reader, AI Telugu doubt solver, and verified resume-ready certificates.
               </p>
 
               {/* Primary Call to Action Buttons */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 pt-2">
                 <Link
-                  href="/coding"
-                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-primaryAccent to-secondaryAccent hover:opacity-90 text-white font-bold text-xs sm:text-sm shadow-glow flex items-center gap-2 transition-all"
+                  href="/mock-test"
+                  className="px-5 py-3 rounded-xl bg-gradient-to-r from-accentPurple to-primary hover:opacity-90 text-white font-bold text-xs sm:text-sm shadow-glow flex items-center gap-2 transition-all active:scale-95"
                 >
-                  <Terminal className="w-4 h-4" />
-                  <span>Practice 2,000+ Coding Problems</span>
+                  <Play className="w-4 h-4 fill-white" />
+                  <span>Start Mock Test (TCS NQT)</span>
                   <ArrowRight className="w-4 h-4" />
-                </Link>
-
-                <Link
-                  href="/book"
-                  className="px-5 py-3 rounded-xl bg-surfaceBg hover:bg-cardBg border border-borderSubtle hover:border-borderHighlight text-textMain font-semibold text-xs sm:text-sm transition-all flex items-center gap-2"
-                >
-                  <BookOpen className="w-4 h-4 text-secondaryAccent" />
-                  <span>Python Book (55 Ch)</span>
                 </Link>
 
                 <Link
@@ -168,7 +192,16 @@ export default function HomePage() {
                   className="px-5 py-3 rounded-xl bg-surfaceBg hover:bg-cardBg border border-borderSubtle hover:border-borderHighlight text-textMain font-semibold text-xs sm:text-sm transition-all flex items-center gap-2"
                 >
                   <Code2 className="w-4 h-4 text-emerald-400" />
-                  <span>Pseudocode Tracing</span>
+                  <span>Practice 5,000 Questions</span>
+                </Link>
+
+                <Link
+                  href="/coding"
+                  prefetch={true}
+                  className="px-5 py-3 rounded-xl bg-surfaceBg hover:bg-cardBg border border-borderSubtle hover:border-borderHighlight text-textMain font-semibold text-xs sm:text-sm transition-all flex items-center gap-2"
+                >
+                  <Terminal className="w-4 h-4" />
+                  <span>Coding Problems</span>
                 </Link>
               </div>
             </div>

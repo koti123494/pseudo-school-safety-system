@@ -76,12 +76,14 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Python Book", href: "/book" },
+    { label: "Pseudocode (5,000)", href: "/practice" },
+    { label: "Mock Test", href: "/mock-test" },
+    { label: "Create Test", href: "/create-test" },
+    { label: "Bookmarks", href: "/bookmarks" },
+    { label: "Certificates", href: "/certificate" },
     { label: "Coding (2,000+)", href: "/coding" },
+    { label: "Python Book", href: "/book" },
     { label: "Playground", href: "/playground" },
-    { label: "Quizzes", href: "/quizzes" },
-    { label: "Companies", href: "/companies" },
-    { label: "Pseudocode", href: "/practice" },
     { label: "Progress", href: "/progress" },
   ];
 
@@ -144,6 +146,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={true}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   isActive
                     ? "bg-surfaceBg text-textMain font-bold border border-borderHighlight shadow-sm"
@@ -161,6 +164,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
           {/* Coding Solved Count */}
           <Link
             href="/coding"
+            prefetch={true}
             title="Coding Problems Solved"
             className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs font-mono font-medium text-emerald-400 hover:bg-emerald-500/20 transition-colors"
           >
@@ -209,6 +213,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
               <Link
                 key={link.href}
                 href={link.href}
+                prefetch={true}
                 onClick={() => setMobileMenuOpen(false)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium ${
                   pathname === link.href

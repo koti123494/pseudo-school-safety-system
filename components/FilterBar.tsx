@@ -81,7 +81,7 @@ export default function FilterBar({
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-borderSubtle">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-secondaryAccent" />
-          <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
+          <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white tracking-wide">
             Filter Practice Pool
           </span>
           <span className="text-xs font-mono text-secondaryAccent bg-primaryAccent/15 px-2 py-0.5 rounded-full border border-primaryAccent/30">
@@ -92,7 +92,7 @@ export default function FilterBar({
         {isFiltered && (
           <button
             onClick={onReset}
-            className="flex items-center gap-1 text-xs text-textMuted hover:text-white transition-colors"
+            className="flex items-center gap-1 text-xs text-textMuted hover:text-gray-900 dark:hover:text-white transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Filters</span>

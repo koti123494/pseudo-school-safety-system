@@ -23,6 +23,7 @@ import {
   Bookmark,
 } from "lucide-react";
 import { CODING_TOPICS } from "@/types";
+import { totalQuestionsCount } from "@/lib/questionsData";
 import ThemeToggle from "./ThemeToggle";
 
 interface SidebarProps {
@@ -180,6 +181,7 @@ function SidebarInner({ isOpen, onClose, onToggle, isDesktopCollapsed }: Sidebar
             </div>
             <Link
               href="/coding"
+              prefetch={true}
               onClick={onClose}
               className={`flex items-center justify-between px-3 py-2 rounded-xl transition-all font-medium ${
                 pathname === "/coding" && !activeTopic
@@ -203,6 +205,7 @@ function SidebarInner({ isOpen, onClose, onToggle, isDesktopCollapsed }: Sidebar
                   <Link
                     key={topic}
                     href={`/coding?topic=${encodeURIComponent(topic)}`}
+                    prefetch={true}
                     onClick={onClose}
                     className={`block px-2.5 py-1 rounded-lg text-[11px] transition-colors truncate ${
                       isActive("/coding", topic)
@@ -265,10 +268,10 @@ function SidebarInner({ isOpen, onClose, onToggle, isDesktopCollapsed }: Sidebar
             </Link>
           </div>
 
-          {/* Section: EXISTING PSEUDOCODE FEATURES */}
+          {/* Section: PSEUDOCODE MEGA FEATURES (5000+ Questions) */}
           <div className="space-y-1">
             <div className="px-2.5 text-[10px] uppercase font-bold text-textMuted tracking-wider mb-1">
-              Pseudocode Modules
+              Pseudocode Engine
             </div>
             <Link
               href="/practice"
@@ -281,23 +284,59 @@ function SidebarInner({ isOpen, onClose, onToggle, isDesktopCollapsed }: Sidebar
             >
               <div className="flex items-center gap-2.5">
                 <Code2 className="w-4 h-4 shrink-0 text-secondaryAccent" />
-                <span>Pseudocode Practice</span>
+                <span>5,000 Questions Bank</span>
               </div>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-surfaceBg border border-borderSubtle text-secondaryAccent font-bold">
-                1,170
+                5,000
               </span>
             </Link>
             <Link
-              href="/topics"
+              href="/mock-test"
               onClick={onClose}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all font-medium ${
-                isActive("/topics")
+                isActive("/mock-test")
                   ? "bg-primaryAccent text-white shadow-glow font-bold"
                   : "text-textMuted hover:text-textMain hover:bg-surfaceBg"
               }`}
             >
-              <Layers className="w-4 h-4 shrink-0" />
-              <span>Pseudocode Topics</span>
+              <Award className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>TCS NQT Mock Test (30m)</span>
+            </Link>
+            <Link
+              href="/create-test"
+              onClick={onClose}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all font-medium ${
+                isActive("/create-test")
+                  ? "bg-primaryAccent text-white shadow-glow font-bold"
+                  : "text-textMuted hover:text-textMain hover:bg-surfaceBg"
+              }`}
+            >
+              <Zap className="w-4 h-4 shrink-0 text-accentCyan" />
+              <span>Custom Test Creator</span>
+            </Link>
+            <Link
+              href="/bookmarks"
+              onClick={onClose}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all font-medium ${
+                isActive("/bookmarks")
+                  ? "bg-primaryAccent text-white shadow-glow font-bold"
+                  : "text-textMuted hover:text-textMain hover:bg-surfaceBg"
+              }`}
+            >
+              <Bookmark className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>Bookmarks & Notes</span>
+            </Link>
+            <Link
+              href="/certificate"
+              onClick={onClose}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all font-medium ${
+                isActive("/certificate")
+                  ? "bg-primaryAccent text-white shadow-glow font-bold"
+                  : "text-textMuted hover:text-textMain hover:bg-surfaceBg"
+              }`}
+            >
+              <Award className="w-4 h-4 shrink-0 text-emerald-400" />
+              <span>Milestone Certificates</span>
             </Link>
           </div>
         </div>

@@ -1,14 +1,36 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
-import CodingEditor from "@/components/CodingEditor";
 import {
   allCodingProblems,
   filterCodingProblems,
   getCodingProblemById,
 } from "@/lib/codingProblemsData";
 import { CodingProblem, CODING_TOPICS, COMPANY_LIST } from "@/types";
+
+// Dynamic imports with instant skeleton loaders to make initial load <300ms
+const PythonBookPractice = dynamic(() => import("@/components/PythonBookPractice"), {
+  ssr: false,
+  loading: () => (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-pulse">
+      <div className="h-28 rounded-3xl bg-purple-950/20 border border-purple-500/20" />
+      <div className="h-24 rounded-2xl bg-secondaryBg/60 border border-borderSubtle" />
+      <div className="h-44 rounded-3xl bg-secondaryBg/40 border border-borderSubtle" />
+    </div>
+  ),
+});
+
+const CodingEditor = dynamic(() => import("@/components/CodingEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4 animate-pulse">
+      <div className="h-14 rounded-2xl bg-secondaryBg border border-borderSubtle" />
+      <div className="h-96 rounded-3xl bg-[#1e1e2e] border border-borderSubtle" />
+    </div>
+  ),
+});
 import {
   Terminal,
   Code2,
@@ -34,8 +56,11 @@ function CodingPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  // Mode: "book" (Python Book 50 Topics with 4-Line Defs, Examples & MCQs) or "sandbox" (Monaco Editor)
+  const [viewMode, setViewMode] = useState<"book" | "sandbox">("book");
+
   // Filters state
-  const [selectedTopic, setSelectedTopic] = useState<string>("All");
+  const [selectedTopic, setSelectedTopic] = useState<string>("Strings");
   const [selectedCompany, setSelectedCompany] = useState<string>("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState<"All" | "Solved" | "Unsolved" | "Bookmarked">("All");
@@ -50,23 +75,6 @@ function CodingPageContent() {
     allCodingProblems[0]?.id || ""
   );
 
-  // Sync with URL query params
-  useEffect(() => {
-    const topicParam = searchParams.get("topic");
-    if (topicParam) setSelectedTopic(topicParam);
-
-    const compParam = searchParams.get("company");
-    if (compParam) setSelectedCompany(compParam);
-
-    const diffParam = searchParams.get("difficulty");
-    if (diffParam) setSelectedDifficulty(diffParam);
-
-    const idParam = searchParams.get("id");
-    if (idParam && getCodingProblemById(idParam)) {
-      setSelectedProblemId(idParam);
-    }
-  }, [searchParams]);
-
   const refreshUserStats = () => {
     setSolvedIds(getCodingSolvedIds());
     setBookmarkIds(getCodingBookmarks());
@@ -76,8 +84,22 @@ function CodingPageContent() {
     refreshUserStats();
   }, []);
 
+  // Sync from URL params
+  useEffect(() => {
+    const t = searchParams?.get("topic");
+    if (t) {
+      setSelectedTopic(t);
+    }
+    const c = searchParams?.get("company");
+    if (c) setSelectedCompany(c);
+    const d = searchParams?.get("difficulty");
+    if (d) setSelectedDifficulty(d);
+    const s = searchParams?.get("search");
+    if (s) setSearchQuery(s);
+  }, [searchParams]);
+
   // Filtered problems list
-  const filteredProblems = useMemo(() => {
+  const filteredProblems: CodingProblem[] = useMemo(() => {
     return filterCodingProblems({
       topic: selectedTopic,
       company: selectedCompany,
@@ -87,10 +109,23 @@ function CodingPageContent() {
     });
   }, [selectedTopic, selectedCompany, selectedDifficulty, selectedStatus, searchQuery, solvedIds, bookmarkIds]);
 
-  const currentProblem: CodingProblem =
-    getCodingProblemById(selectedProblemId) ||
-    filteredProblems[0] ||
-    allCodingProblems[0];
+  // Current problem
+  const currentProblem: CodingProblem | undefined = useMemo(() => {
+    if (filteredProblems.length === 0) return undefined;
+    const found = filteredProblems.find((p) => p.id === selectedProblemId);
+    return found || filteredProblems[0];
+  }, [filteredProblems, selectedProblemId]);
+
+  useEffect(() => {
+    if (filteredProblems.length > 0) {
+      const exists = filteredProblems.some((p) => p.id === selectedProblemId);
+      if (!exists) {
+        setSelectedProblemId(filteredProblems[0].id);
+      }
+    } else {
+      setSelectedProblemId("");
+    }
+  }, [filteredProblems, selectedProblemId]);
 
   useEffect(() => {
     if (currentProblem) {
@@ -101,14 +136,18 @@ function CodingPageContent() {
     }
   }, [currentProblem]);
 
-  const handleSelectProblem = (prob: CodingProblem) => {
-    setSelectedProblemId(prob.id);
-  };
-
-  const handleToggleBookmark = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    toggleCodingBookmark(id);
-    refreshUserStats();
+  const handleTopicClick = (topic: string) => {
+    setSelectedTopic(topic);
+    const updated = filterCodingProblems({
+      topic,
+      company: selectedCompany,
+      difficulty: selectedDifficulty,
+      status: selectedStatus,
+      search: searchQuery,
+    });
+    if (updated.length > 0) {
+      setSelectedProblemId(updated[0].id);
+    }
   };
 
   const handleResetFilters = () => {
@@ -117,228 +156,75 @@ function CodingPageContent() {
     setSelectedDifficulty("All");
     setSelectedStatus("All");
     setSearchQuery("");
-  };
-
-  const currentIdx = filteredProblems.findIndex((p) => p.id === currentProblem?.id);
-  const hasPrev = currentIdx > 0;
-  const hasNext = currentIdx >= 0 && currentIdx < filteredProblems.length - 1;
-
-  const handlePrev = () => {
-    if (hasPrev) setSelectedProblemId(filteredProblems[currentIdx - 1].id);
-  };
-
-  const handleNext = () => {
-    if (hasNext) setSelectedProblemId(filteredProblems[currentIdx + 1].id);
+    if (allCodingProblems.length > 0) {
+      setSelectedProblemId(allCodingProblems[0].id);
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-borderSubtle pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primaryAccent to-secondaryAccent p-0.5 text-white flex items-center justify-center shadow-glow">
-              <Terminal className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-black text-textMain tracking-tight flex items-center gap-2">
-                Python Coding Practice Studio
-                <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-primaryAccent/20 text-secondaryAccent border border-primaryAccent/40">
-                  {allCodingProblems.length} Problems
-                </span>
-              </h1>
-            </div>
-          </div>
-          <p className="text-xs text-textMuted mt-1">
-            20 algorithmic topics, placement test cases, company-specific patterns, and real-time Python execution.
-          </p>
-        </div>
-
-        {/* Global Stats */}
-        <div className="flex items-center gap-3">
-          <div className="px-3.5 py-1.5 rounded-xl bg-cardBg border border-borderSubtle text-xs font-mono text-emerald-400 flex items-center gap-2 shadow-sm">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>
-              Solved: <strong className="text-textMain">{solvedIds.length}</strong> / {allCodingProblems.length}
-            </span>
-          </div>
-
-          <div className="px-3.5 py-1.5 rounded-xl bg-cardBg border border-borderSubtle text-xs font-mono text-secondaryAccent flex items-center gap-2 shadow-sm">
-            <Bookmark className="w-4 h-4 text-secondaryAccent" />
-            <span>
-              Saved: <strong className="text-textMain">{bookmarkIds.length}</strong>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter and Search Toolbar */}
-      <div className="p-4 rounded-2xl bg-cardBg border border-borderSubtle shadow-card space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* Search Input */}
-          <div className="relative sm:col-span-2 lg:col-span-1">
-            <Search className="w-4 h-4 text-textMuted absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search problem, ID, logic..."
-              className="w-full pl-9 pr-3 py-2 rounded-xl bg-surfaceBg border border-borderSubtle text-xs text-textMain placeholder-textMuted/60 focus:outline-none focus:border-primaryAccent transition-colors"
-            />
-          </div>
-
-          {/* Topic Select */}
-          <select
-            value={selectedTopic}
-            onChange={(e) => setSelectedTopic(e.target.value)}
-            className="w-full py-2 px-3 rounded-xl bg-surfaceBg border border-borderSubtle text-xs text-textMain focus:outline-none focus:border-primaryAccent cursor-pointer"
-          >
-            <option value="All">All Topics ({CODING_TOPICS.length})</option>
-            {CODING_TOPICS.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-
-          {/* Company Select */}
-          <select
-            value={selectedCompany}
-            onChange={(e) => setSelectedCompany(e.target.value)}
-            className="w-full py-2 px-3 rounded-xl bg-surfaceBg border border-borderSubtle text-xs text-textMain focus:outline-none focus:border-primaryAccent cursor-pointer"
-          >
-            <option value="All">All Companies ({COMPANY_LIST.length})</option>
-            {COMPANY_LIST.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-
-          {/* Difficulty Select */}
-          <select
-            value={selectedDifficulty}
-            onChange={(e) => setSelectedDifficulty(e.target.value)}
-            className="w-full py-2 px-3 rounded-xl bg-surfaceBg border border-borderSubtle text-xs text-textMain focus:outline-none focus:border-primaryAccent cursor-pointer"
-          >
-            <option value="All">All Difficulties</option>
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
-          </select>
-
-          {/* Status Select & Reset */}
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value as any)}
-              className="w-full py-2 px-3 rounded-xl bg-surfaceBg border border-borderSubtle text-xs text-textMain focus:outline-none focus:border-primaryAccent cursor-pointer"
-            >
-              <option value="All">All Status</option>
-              <option value="Solved">Solved Only</option>
-              <option value="Unsolved">Unsolved Only</option>
-              <option value="Bookmarked">Bookmarked</option>
-            </select>
-
-            <button
-              onClick={handleResetFilters}
-              title="Reset Filters"
-              className="p-2 rounded-xl bg-surfaceBg hover:bg-surfaceHover border border-borderSubtle text-textMuted hover:text-textMain transition-colors shrink-0"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Quick Topic Chips Strip */}
-        <div className="overflow-x-auto pb-1 pt-1 border-t border-borderSubtle/60">
-          <div className="flex items-center gap-1.5 min-w-max">
-            <button
-              onClick={() => setSelectedTopic("All")}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                selectedTopic === "All"
-                  ? "bg-primaryAccent text-white"
-                  : "bg-surfaceBg/60 text-textMuted hover:text-textMain"
-              }`}
-            >
-              All Topics
-            </button>
-            {CODING_TOPICS.map((topic) => (
-              <button
-                key={topic}
-                onClick={() => setSelectedTopic(topic)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                  selectedTopic === topic
-                    ? "bg-primaryAccent text-white shadow-sm"
-                    : "bg-surfaceBg/60 text-textMuted hover:text-textMain"
-                }`}
-              >
-                {topic}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Problem Navigation & Selection Drawer */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-cardBg border border-borderSubtle shadow-sm">
-        <div className="flex items-center gap-2 text-xs text-textMuted">
-          <span>Found:</span>
-          <strong className="text-secondaryAccent font-mono">{filteredProblems.length}</strong>
-          <span>matching problems</span>
-          {currentProblem && (
-            <span className="hidden sm:inline text-textMuted font-mono">
-              | Active: <strong className="text-textMain">{currentProblem.id}</strong>
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
+    <div className="space-y-4">
+      {/* View Switcher Tabs */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-surfaceBg border border-borderSubtle w-fit shadow-sm">
           <button
-            disabled={!hasPrev}
-            onClick={handlePrev}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-all ${
-              hasPrev
-                ? "bg-surfaceBg border-borderSubtle text-textMain hover:border-borderHighlight cursor-pointer"
-                : "opacity-40 border-borderSubtle text-textMuted cursor-not-allowed"
+            onClick={() => setViewMode("book")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              viewMode === "book"
+                ? "bg-purple-600 text-white shadow-md shadow-purple-500/30"
+                : "text-textMuted hover:text-white hover:bg-cardBg"
             }`}
           >
-            ← Prev Problem
+            <BookOpen className="w-4 h-4" />
+            <span>Python Book & MCQs (50 Topics)</span>
           </button>
           <button
-            disabled={!hasNext}
-            onClick={handleNext}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-all ${
-              hasNext
-                ? "bg-surfaceBg border-borderSubtle text-textMain hover:border-borderHighlight cursor-pointer"
-                : "opacity-40 border-borderSubtle text-textMuted cursor-not-allowed"
+            onClick={() => setViewMode("sandbox")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              viewMode === "sandbox"
+                ? "bg-primaryAccent text-white shadow-glow"
+                : "text-textMuted hover:text-white hover:bg-cardBg"
             }`}
           >
-            Next Problem →
+            <Terminal className="w-4 h-4" />
+            <span>Monaco Coding Studio Sandbox</span>
           </button>
         </div>
       </div>
 
-      {/* Main LeetCode-style Coding Editor */}
-      {currentProblem ? (
-        <CodingEditor
-          problem={currentProblem}
-          onSolved={refreshUserStats}
-          onNext={handleNext}
-        />
+      {viewMode === "book" ? (
+        /* Full Python Book Experience */
+        <PythonBookPractice initialTopic={selectedTopic === "All" ? "Strings" : selectedTopic} />
       ) : (
-        <div className="p-12 rounded-3xl bg-cardBg border border-borderSubtle text-center space-y-4 max-w-md mx-auto">
-          <Layers className="w-10 h-10 text-secondaryAccent mx-auto" />
-          <h3 className="text-lg font-bold text-white">No Matching Coding Problems</h3>
-          <p className="text-xs text-textMuted">
-            Try adjusting your search query, topic filter, or reset all filters.
-          </p>
-          <button
-            onClick={handleResetFilters}
-            className="px-4 py-2 rounded-xl bg-primaryAccent text-white text-xs font-bold shadow-glow"
-          >
-            Reset Filters
-          </button>
+        /* Monaco Sandbox Mode */
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-6">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 rounded-2xl bg-cardBg border border-borderSubtle">
+            <div className="text-xs text-textMuted">
+              Found: <strong className="text-secondaryAccent font-mono">{filteredProblems.length}</strong> matching problems | Active:{" "}
+              <strong className="text-white font-mono">{currentProblem?.id}</strong> - {currentProblem?.title}
+            </div>
+            <div className="flex items-center gap-2">
+              {currentProblem && (
+                <button
+                  onClick={() => setViewMode("book")}
+                  className="px-3 py-1.5 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-bold hover:bg-purple-500/30 transition-colors"
+                >
+                  View Topic Theory & MCQs →
+                </button>
+              )}
+            </div>
+          </div>
+
+          {currentProblem ? (
+            <CodingEditor
+              problem={currentProblem}
+              onSolved={refreshUserStats}
+              onNext={() => {}}
+            />
+          ) : (
+            <div className="p-12 text-center text-textMuted bg-cardBg rounded-3xl border border-borderSubtle">
+              No matching problems found.
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -350,7 +236,7 @@ export default function PythonCodingPage() {
     <Suspense
       fallback={
         <div className="max-w-7xl mx-auto p-12 text-center text-textMuted font-mono text-sm">
-          Loading Python Coding Practice Studio...
+          Loading Python Practice...
         </div>
       }
     >

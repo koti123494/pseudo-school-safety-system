@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { CodingProblem } from "@/types";
 import { runPythonCode, runPythonCustomInput, ExecutionResult } from "@/lib/pythonRunner";
+import confetti from "canvas-confetti";
 import {
   Play,
   CheckCircle2,
@@ -20,6 +21,8 @@ import {
   BookOpen,
   Cpu,
   Check,
+  AlertTriangle,
+  FileCode,
 } from "lucide-react";
 import {
   markCodingSolved,
@@ -27,16 +30,7 @@ import {
   isCodingBookmarked,
   saveCodingSubmission,
 } from "@/lib/storage";
-
-// Dynamically import Monaco editor to avoid SSR issues
-const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center h-full w-full bg-[#1e1e2e] text-textMuted text-xs font-mono">
-      Initializing Monaco Python Workspace...
-    </div>
-  ),
-});
+import LazyMonacoEditor from "@/components/LazyMonacoEditor";
 
 interface CodingEditorProps {
   problem: CodingProblem;
@@ -58,7 +52,7 @@ export default function CodingEditor({
   const [activeLeftTab, setActiveLeftTab] = useState<
     "description" | "hints" | "solution" | "testcases"
   >("description");
-  const [activeRightTab, setActiveRightTab] = useState<"results" | "customInput">("results");
+  const [activeRightTab, setActiveRightTab] = useState<"results" | "console" | "customInput">("results");
   const [customInputText, setCustomInputText] = useState(
     problem.examples[0]?.input || ""
   );
@@ -68,9 +62,12 @@ export default function CodingEditor({
     error?: string;
   } | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [revealedHints, setRevealedHints] = useState<number[]>([]);
+  const [revealedHintsCount, setRevealedHintsCount] = useState<number>(0);
   const [submissionStatus, setSubmissionStatus] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(true);
+
+  const editorRef = useRef<any>(null);
+  const decorationsRef = useRef<any[]>([]);
 
   useEffect(() => {
     const updateTheme = () => {
@@ -91,10 +88,14 @@ export default function CodingEditor({
     setExecResult(null);
     setCustomOutput(null);
     setSubmissionStatus(null);
-    setRevealedHints([]);
+    setRevealedHintsCount(0);
     setIsBookmarked(isCodingBookmarked(problem.id));
     if (problem.examples[0]) {
       setCustomInputText(problem.examples[0].input);
+    }
+    // Clear editor decorations on problem switch
+    if (editorRef.current && decorationsRef.current.length > 0) {
+      decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, []);
     }
   }, [problem]);
 
@@ -103,13 +104,59 @@ export default function CodingEditor({
     setIsBookmarked(updated);
   };
 
+  const clearEditorDecorations = () => {
+    if (editorRef.current && decorationsRef.current.length > 0) {
+      decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, []);
+    }
+  };
+
+  const highlightEditorErrorLine = (line: number) => {
+    if (!editorRef.current) return;
+    decorationsRef.current = editorRef.current.deltaDecorations(decorationsRef.current, [
+      {
+        range: {
+          startLineNumber: line,
+          startColumn: 1,
+          endLineNumber: line,
+          endColumn: 1000,
+        },
+        options: {
+          isWholeLine: true,
+          className: "bg-rose-950/40 border-l-4 border-rose-500",
+          overviewRuler: {
+            color: "#ef4444",
+            position: 4,
+          },
+        },
+      },
+    ]);
+    editorRef.current.revealLineInCenter(line);
+  };
+
   const handleRunCode = async () => {
     setIsRunning(true);
     setActiveRightTab("results");
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    await new Promise((resolve) => setTimeout(resolve, 250));
     try {
-      const result = await runPythonCode(code, problem.testCases);
+      // Run only sample/visible test cases
+      const result = await runPythonCode(code, problem.testCases, { onlySample: true });
       setExecResult(result);
+
+      if (result.error?.line) {
+        highlightEditorErrorLine(result.error.line);
+      } else {
+        clearEditorDecorations();
+      }
+
+      if (result.passed) {
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+          });
+        } catch (_) {}
+      }
     } catch (err: any) {
       setExecResult({
         passed: false,
@@ -127,10 +174,18 @@ export default function CodingEditor({
   const handleSubmitCode = async () => {
     setIsSubmitting(true);
     setActiveRightTab("results");
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 400));
     try {
-      const result = await runPythonCode(code, problem.testCases);
+      // Submit checks ALL test cases, including hidden testcases
+      const result = await runPythonCode(code, problem.testCases, { onlySample: false });
       setExecResult(result);
+
+      if (result.error?.line) {
+        highlightEditorErrorLine(result.error.line);
+      } else {
+        clearEditorDecorations();
+      }
+
       saveCodingSubmission({
         problemId: problem.id,
         code,
@@ -143,6 +198,13 @@ export default function CodingEditor({
         setSubmissionStatus("Accepted");
         markCodingSolved(problem.id);
         if (onSolved) onSolved();
+        try {
+          confetti({
+            particleCount: 120,
+            spread: 90,
+            origin: { y: 0.5 },
+          });
+        } catch (_) {}
       } else {
         setSubmissionStatus("Wrong Answer");
       }
@@ -170,6 +232,9 @@ export default function CodingEditor({
         timeMs: res.executionTimeMs,
         error: res.error,
       });
+      if (res.error) {
+        setActiveRightTab("console");
+      }
     } catch (err: any) {
       setCustomOutput({
         output: `Execution error: ${err.message}`,
@@ -185,23 +250,18 @@ export default function CodingEditor({
     setCode(problem.starterCode);
     setExecResult(null);
     setSubmissionStatus(null);
+    clearEditorDecorations();
   };
 
   const handleLoadSolution = () => {
-    if (problem.solution || problem.solutionCode) {
-      setCode(problem.solution || problem.solutionCode || "");
-    }
-  };
-
-  const toggleHint = (index: number) => {
-    if (revealedHints.includes(index)) {
-      setRevealedHints(revealedHints.filter((i) => i !== index));
-    } else {
-      setRevealedHints([...revealedHints, index]);
+    if (problem.solution || (problem as any).solutionCode) {
+      setCode(problem.solution || (problem as any).solutionCode || "");
+      clearEditorDecorations();
     }
   };
 
   const companies = problem.companies || [];
+  const allHints = problem.hints || [];
 
   return (
     <div className="w-full flex flex-col lg:flex-row gap-4 h-full min-h-[680px]">
@@ -246,7 +306,7 @@ export default function CodingEditor({
                   : "text-textMuted hover:text-textMain"
               }`}
             >
-              Hints ({problem.hints?.length || 0})
+              Hints ({revealedHintsCount}/5)
             </button>
             <button
               onClick={() => setActiveLeftTab("solution")}
@@ -271,82 +331,73 @@ export default function CodingEditor({
           </div>
         </div>
 
-        {/* Left Content Area */}
-        <div className="flex-1 p-5 overflow-y-auto space-y-5 text-sm">
+        {/* Left Tab Content */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-sm text-textMain">
           {activeLeftTab === "description" && (
             <>
-              {/* Title & Tags */}
-              <div className="space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <h2 className="text-lg font-bold text-white tracking-tight">
-                    {problem.title}
-                  </h2>
-                  <button
-                    onClick={handleToggleBookmark}
-                    title={isBookmarked ? "Remove Bookmark" : "Bookmark Problem"}
-                    className={`p-1.5 rounded-lg border transition-all ${
-                      isBookmarked
-                        ? "bg-primaryAccent/20 border-primaryAccent/40 text-secondaryAccent"
-                        : "bg-surfaceBg border-borderSubtle text-textMuted hover:text-white"
+              {/* Problem Title & Bookmark */}
+              <div className="flex items-start justify-between gap-3">
+                <h2 className="text-base sm:text-lg font-bold text-textMain leading-tight">
+                  {problem.title}
+                </h2>
+                <button
+                  onClick={handleToggleBookmark}
+                  className="p-1.5 rounded-lg border border-borderSubtle bg-surfaceBg hover:bg-surfaceHover text-textMuted hover:text-secondaryAccent transition-colors shrink-0"
+                  title={isBookmarked ? "Remove Bookmark" : "Save Problem"}
+                >
+                  <Bookmark
+                    className={`w-4 h-4 ${
+                      isBookmarked ? "fill-secondaryAccent text-secondaryAccent" : ""
                     }`}
-                  >
-                    <Bookmark
-                      className={`w-4 h-4 ${isBookmarked ? "fill-secondaryAccent" : ""}`}
-                    />
-                  </button>
-                </div>
+                  />
+                </button>
+              </div>
 
-                {/* Company & Provenance tags */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  {companies.map((comp, idx) => (
+              {/* Companies Badges */}
+              {companies.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[11px] text-textMuted font-medium mr-1">
+                    Asked In:
+                  </span>
+                  {companies.map((c) => (
                     <span
-                      key={idx}
-                      className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-surfaceBg border border-borderSubtle text-secondaryAccent"
+                      key={c}
+                      className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-surfaceBg border border-borderSubtle text-secondaryAccent"
                     >
-                      {comp}
+                      {c}
                     </span>
                   ))}
-                  {problem.sourceType && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono text-zinc-400 bg-surfaceBg border border-borderSubtle">
-                      {problem.sourceType}
-                    </span>
+                </div>
+              )}
+
+              {/* Description Body */}
+              <div className="text-xs sm:text-sm text-zinc-300 leading-relaxed space-y-3 pt-1">
+                {problem.description.split("\n\n").map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
+
+              {/* Input & Output Format */}
+              {(problem.inputFormat || problem.outputFormat) && (
+                <div className="space-y-2 pt-2 border-t border-borderSubtle/60 text-xs">
+                  {problem.inputFormat && (
+                    <div>
+                      <span className="font-semibold text-textMuted">Input Format: </span>
+                      <span className="text-zinc-300">{problem.inputFormat}</span>
+                    </div>
+                  )}
+                  {problem.outputFormat && (
+                    <div>
+                      <span className="font-semibold text-textMuted">Output Format: </span>
+                      <span className="text-zinc-300">{problem.outputFormat}</span>
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {/* Problem Description */}
-              <div className="text-zinc-300 leading-relaxed whitespace-pre-line text-xs sm:text-sm">
-                {problem.description || problem.problem}
-              </div>
-
-              {/* Input / Output Format */}
-              <div className="space-y-3 pt-2">
-                {problem.inputFormat && (
-                  <div className="bg-surfaceBg/60 p-3 rounded-xl border border-borderSubtle">
-                    <div className="text-xs font-semibold text-secondaryAccent mb-1">
-                      Input Format:
-                    </div>
-                    <div className="text-xs font-mono text-zinc-300 whitespace-pre-line">
-                      {problem.inputFormat}
-                    </div>
-                  </div>
-                )}
-
-                {problem.outputFormat && (
-                  <div className="bg-surfaceBg/60 p-3 rounded-xl border border-borderSubtle">
-                    <div className="text-xs font-semibold text-secondaryAccent mb-1">
-                      Output Format:
-                    </div>
-                    <div className="text-xs font-mono text-zinc-300 whitespace-pre-line">
-                      {problem.outputFormat}
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Constraints */}
               {problem.constraints && problem.constraints.length > 0 && (
-                <div className="pt-1">
+                <div className="space-y-1.5 pt-2 border-t border-borderSubtle/60">
                   <div className="text-xs font-semibold text-textMuted uppercase tracking-wider mb-2">
                     Constraints:
                   </div>
@@ -394,44 +445,58 @@ export default function CodingEditor({
           )}
 
           {activeLeftTab === "hints" && (
-            <div className="space-y-3">
-              <div className="text-xs font-semibold text-textMuted uppercase tracking-wider">
-                Interview Hints:
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-xs font-semibold text-textMuted uppercase tracking-wider">
+                <span>Algorithmic Hints ({revealedHintsCount}/5):</span>
+                {revealedHintsCount > 0 && (
+                  <button
+                    onClick={() => setRevealedHintsCount(0)}
+                    className="text-[11px] text-textMuted hover:text-white underline cursor-pointer"
+                  >
+                    Hide All
+                  </button>
+                )}
               </div>
-              {problem.hints && problem.hints.length > 0 ? (
-                problem.hints.map((hint, i) => {
-                  const isRevealed = revealedHints.includes(i);
-                  return (
-                    <div
-                      key={i}
-                      className="p-3.5 rounded-xl border border-borderSubtle bg-surfaceBg/60 space-y-2"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-secondaryAccent flex items-center gap-1.5">
-                          <HelpCircle className="w-3.5 h-3.5" />
-                          Hint #{i + 1}
-                        </span>
-                        <button
-                          onClick={() => toggleHint(i)}
-                          className="text-[11px] font-medium text-textMuted hover:text-white underline"
-                        >
-                          {isRevealed ? "Hide" : "Reveal"}
-                        </button>
-                      </div>
-                      {isRevealed ? (
-                        <p className="text-xs text-zinc-300 leading-relaxed pt-1">
-                          {hint}
-                        </p>
-                      ) : (
-                        <p className="text-xs text-textMuted/60 italic">
-                          Click reveal to view this algorithmic hint.
-                        </p>
-                      )}
+
+              {/* Progressive Unlock Button */}
+              {revealedHintsCount < 5 && (
+                <button
+                  onClick={() => setRevealedHintsCount((prev) => Math.min(5, prev + 1))}
+                  className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-primaryAccent/20 to-secondaryAccent/20 hover:from-primaryAccent/30 hover:to-secondaryAccent/30 border border-primaryAccent/40 text-secondaryAccent hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer"
+                >
+                  <HelpCircle className="w-4 h-4 text-secondaryAccent" />
+                  <span>Show Hint {revealedHintsCount + 1} ({revealedHintsCount + 1}/5)</span>
+                </button>
+              )}
+
+              {/* Render revealed hints */}
+              <div className="space-y-2.5">
+                {allHints.slice(0, revealedHintsCount).map((hint, i) => (
+                  <div
+                    key={i}
+                    className="p-3.5 rounded-xl border border-borderSubtle bg-surfaceBg/60 space-y-1.5 transition-all"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-secondaryAccent flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-secondaryAccent" />
+                        Hint #{i + 1}
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20">
+                        Unlocked
+                      </span>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="text-xs text-textMuted italic">No hints available.</div>
+                    <p className="text-xs text-zinc-200 leading-relaxed pt-0.5">
+                      {hint.replace(/^Hint\s*\d*:\s*/i, "")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {revealedHintsCount === 0 && (
+                <div className="p-6 rounded-xl border border-dashed border-borderSubtle text-center text-xs text-textMuted/70 space-y-1">
+                  <p>Stuck on this problem?</p>
+                  <p>Click &quot;Show Hint 1&quot; above to unlock progressive hints one by one without spoiling the solution.</p>
+                </div>
               )}
             </div>
           )}
@@ -444,59 +509,47 @@ export default function CodingEditor({
                 </span>
                 <button
                   onClick={handleLoadSolution}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold text-secondaryAccent hover:text-white bg-primaryAccent/20 border border-primaryAccent/40 hover:bg-primaryAccent/30 transition-colors"
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold text-secondaryAccent hover:text-white bg-primaryAccent/20 border border-primaryAccent/40 hover:bg-primaryAccent/30 transition-colors cursor-pointer"
                 >
                   Load Solution to Editor
                 </button>
               </div>
 
-              {/* Complexity Badges */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-surfaceBg/70 border border-borderSubtle space-y-1">
-                  <div className="text-[11px] text-textMuted font-medium flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5 text-secondaryAccent" />
-                    Time Complexity
-                  </div>
-                  <div className="text-xs font-mono font-bold text-emerald-400">
-                    {problem.timeComplexity || "O(N)"}
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-surfaceBg/70 border border-borderSubtle space-y-1">
-                  <div className="text-[11px] text-textMuted font-medium flex items-center gap-1">
-                    <Cpu className="w-3.5 h-3.5 text-secondaryAccent" />
-                    Space Complexity
-                  </div>
-                  <div className="text-xs font-mono font-bold text-secondaryAccent">
-                    {problem.spaceComplexity || "O(1)"}
-                  </div>
-                </div>
+              <div className="flex items-center gap-3 text-xs font-mono">
+                <span className="px-2 py-1 rounded bg-surfaceBg border border-borderSubtle text-emerald-400">
+                  Time: {problem.timeComplexity || "O(n)"}
+                </span>
+                <span className="px-2 py-1 rounded bg-surfaceBg border border-borderSubtle text-secondaryAccent">
+                  Space: {problem.spaceComplexity || "O(1)"}
+                </span>
               </div>
 
-              {/* Explanation Narrative */}
               {problem.explanation && (
-                <div className="p-3.5 rounded-xl bg-surfaceBg/50 border border-borderSubtle text-xs text-zinc-300 leading-relaxed whitespace-pre-line">
-                  <div className="text-secondaryAccent font-semibold mb-1 font-sans">
+                <div className="text-xs text-zinc-300 leading-relaxed bg-surfaceBg/50 p-3 rounded-xl border border-borderSubtle">
+                  <span className="font-semibold text-textMain block mb-1">
                     Approach Explanation:
-                  </div>
+                  </span>
                   {problem.explanation}
                 </div>
               )}
 
-              {/* Solution Code */}
-              <div className="space-y-1.5">
-                <span className="text-xs text-textMuted font-medium">Optimal Python Code:</span>
-                <pre className="p-3.5 rounded-xl bg-[#12121a] border border-borderSubtle font-mono text-xs text-emerald-300 overflow-x-auto leading-relaxed">
-                  <code>{problem.solution || problem.solutionCode}</code>
-                </pre>
-              </div>
+              {problem.solution && (
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-mono text-textMuted uppercase tracking-wider">
+                    Reference Implementation:
+                  </span>
+                  <pre className="p-3 rounded-xl bg-codeBlock border border-borderSubtle text-xs font-mono text-emerald-300 overflow-x-auto">
+                    <code>{problem.solution}</code>
+                  </pre>
+                </div>
+              )}
             </div>
           )}
 
           {activeLeftTab === "testcases" && (
             <div className="space-y-3">
               <div className="text-xs font-semibold text-textMuted uppercase tracking-wider">
-                Pre-configured Test Cases:
+                Problem Test Suite:
               </div>
               {problem.testCases?.map((tc, i) => (
                 <div
@@ -551,7 +604,7 @@ export default function CodingEditor({
               id="run-code-button"
               disabled={isRunning || isSubmitting}
               onClick={handleRunCode}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs transition-all border ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs transition-all border ${
                 isRunning
                   ? "bg-zinc-700 text-zinc-300 border-zinc-600 cursor-not-allowed"
                   : "bg-surfaceBg hover:bg-surfaceHover text-textMain border-borderSubtle hover:border-borderHighlight cursor-pointer"
@@ -566,7 +619,7 @@ export default function CodingEditor({
               id="submit-code-button"
               disabled={isSubmitting || isRunning}
               onClick={handleSubmitCode}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-glow transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-bold text-xs shadow-glow transition-all ${
                 isSubmitting
                   ? "bg-zinc-700 text-zinc-300 cursor-not-allowed"
                   : "bg-gradient-to-r from-primaryAccent to-secondaryAccent hover:opacity-90 text-white cursor-pointer"
@@ -580,12 +633,18 @@ export default function CodingEditor({
 
         {/* Monaco Editor Container */}
         <div className="flex-1 min-h-[340px] relative">
-          <MonacoEditor
+          <LazyMonacoEditor
             height="100%"
             language="python"
             theme={isDark ? "vs-dark" : "light"}
             value={code}
-            onChange={(val) => setCode(val || "")}
+            onMount={(editor) => {
+              editorRef.current = editor;
+            }}
+            onChange={(val) => {
+              setCode(val || "");
+              clearEditorDecorations();
+            }}
             options={{
               minimap: { enabled: false },
               fontSize: 13,
@@ -618,6 +677,16 @@ export default function CodingEditor({
                 Test Results
               </button>
               <button
+                onClick={() => setActiveRightTab("console")}
+                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
+                  activeRightTab === "console"
+                    ? "bg-primaryAccent/20 text-secondaryAccent border border-primaryAccent/30"
+                    : "text-textMuted hover:text-textMain"
+                }`}
+              >
+                Console Logs {execResult?.consoleLogs && execResult.consoleLogs.length > 0 && `(${execResult.consoleLogs.length})`}
+              </button>
+              <button
                 onClick={() => setActiveRightTab("customInput")}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${
                   activeRightTab === "customInput"
@@ -643,83 +712,109 @@ export default function CodingEditor({
           </div>
 
           <div className="p-4 max-h-[220px] overflow-y-auto">
-            {activeRightTab === "results" ? (
+            {activeRightTab === "results" && (
               <>
                 {!execResult ? (
                   <div className="text-xs text-textMuted/60 font-mono py-2">
-                    Click &quot;Run Code&quot; to test your solution, or &quot;Submit&quot; to record your score.
+                    Click &quot;Run Code&quot; to test your solution, or &quot;Submit&quot; to test against all testcases.
                   </div>
                 ) : (
                   <div className="space-y-2.5">
-                    <div
-                      className={`p-2.5 rounded-xl border flex items-center justify-between text-xs font-bold ${
-                        execResult.passed
-                          ? "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
-                          : "bg-rose-950/40 border-rose-500/40 text-rose-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {execResult.passed ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    {/* Error Banner with Line Number */}
+                    {execResult.error ? (
+                      <div className="p-3 rounded-xl border border-rose-500/50 bg-rose-950/40 text-rose-300 text-xs font-mono space-y-1">
+                        <div className="flex items-center gap-2 font-bold text-rose-400">
+                          <XCircle className="w-4 h-4 shrink-0" />
+                          <span>{execResult.output}</span>
+                        </div>
+                        {execResult.error.line && (
+                          <div className="text-[11px] text-zinc-300 pl-6">
+                            Line {execResult.error.line}: Check highlighted code in editor.
+                          </div>
                         )}
-                        <span>{execResult.output}</span>
                       </div>
-                      <div className="flex items-center gap-2 font-mono text-[11px]">
-                        <span>{execResult.executionTimeMs}ms</span>
-                        <span>
-                          ({execResult.passedTests}/{execResult.totalTests} Passed)
-                        </span>
+                    ) : (
+                      /* Pass / Fail Banner */
+                      <div
+                        className={`p-3 rounded-xl border flex items-center justify-between text-xs font-bold ${
+                          execResult.passed
+                            ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-300"
+                            : "bg-rose-950/40 border-rose-500/50 text-rose-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {execResult.passed ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                          )}
+                          <span>{execResult.output}</span>
+                        </div>
+                        <div className="flex items-center gap-2 font-mono text-[11px]">
+                          <span>{execResult.executionTimeMs}ms</span>
+                          <span>
+                            ({execResult.passedTests}/{execResult.totalTests} Passed)
+                          </span>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Test Case Breakdown */}
-                    <div className="space-y-1.5">
-                      {execResult.results.map((r) => (
-                        <div
-                          key={r.testIndex}
-                          className={`p-2 rounded-lg border text-xs font-mono flex flex-col gap-1 ${
-                            r.passed
-                              ? "bg-emerald-950/15 border-emerald-500/20 text-emerald-200"
-                              : "bg-rose-950/20 border-rose-500/30 text-rose-200"
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-sans font-semibold">
-                              Test Case #{r.testIndex}: {r.passed ? "PASSED" : "FAILED"}
-                            </span>
-                            <span>{r.passed ? "✓" : "✕"}</span>
-                          </div>
-                          {!r.passed && (
-                            <div className="text-[11px] space-y-0.5 pt-1 text-zinc-300">
-                              <div>
-                                <span className="text-textMuted">Input: </span>
-                                <span>{r.input}</span>
-                              </div>
-                              <div>
-                                <span className="text-textMuted">Expected: </span>
-                                <span className="text-emerald-400 font-bold">{r.expected}</span>
-                              </div>
-                              <div>
-                                <span className="text-textMuted">Actual: </span>
-                                <span className="text-rose-400 font-bold">{r.actual}</span>
-                              </div>
-                              {r.error && (
-                                <div className="text-rose-400 text-[10px]">{r.error}</div>
-                              )}
+                    {execResult.results.length > 0 && (
+                      <div className="space-y-1.5">
+                        {execResult.results.map((r) => (
+                          <div
+                            key={r.testIndex}
+                            className={`p-2.5 rounded-lg border text-xs font-mono flex flex-col gap-1 ${
+                              r.passed
+                                ? "bg-emerald-950/15 border-emerald-500/20 text-emerald-200"
+                                : "bg-rose-950/20 border-rose-500/30 text-rose-200"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-sans font-semibold flex items-center gap-1.5">
+                                {r.passed ? (
+                                  <span className="text-emerald-400">✓</span>
+                                ) : (
+                                  <span className="text-rose-400">✕</span>
+                                )}
+                                <span>
+                                  Test Case #{r.testIndex} {r.hidden ? "(Hidden)" : ""}: {r.passed ? "PASSED" : "FAILED"}
+                                </span>
+                              </span>
+                              <span className="font-bold">{r.passed ? "PASSED" : "FAILED"}</span>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+
+                            {!r.passed && (
+                              <div className="text-[11px] space-y-1 pt-1.5 text-zinc-300 border-t border-rose-500/20 mt-1">
+                                <div>
+                                  <span className="text-textMuted">Input: </span>
+                                  <span className="text-zinc-200">{r.input}</span>
+                                </div>
+                                <div>
+                                  <span className="text-textMuted">Expected: </span>
+                                  <span className="text-emerald-400 font-bold">{r.expected}</span>
+                                </div>
+                                <div>
+                                  <span className="text-textMuted">Your Output: </span>
+                                  <span className="text-rose-400 font-bold">{r.actual}</span>
+                                </div>
+                                {r.error && (
+                                  <div className="text-rose-400 text-[10px]">{r.error}</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Cycle Continuation */}
                     {isCycleMode && execResult.passed && onNext && (
                       <div className="pt-2">
                         <button
                           onClick={onNext}
-                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primaryAccent to-secondaryAccent text-white text-xs font-bold shadow-glow hover:opacity-95 transition-all flex items-center justify-center gap-1.5"
+                          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-primaryAccent to-secondaryAccent text-white text-xs font-bold shadow-glow hover:opacity-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <span>Continue Practice Cycle ➔</span>
                         </button>
@@ -728,8 +823,34 @@ export default function CodingEditor({
                   </div>
                 )}
               </>
-            ) : (
-              /* Custom Input Panel */
+            )}
+
+            {/* Console Output Tab */}
+            {activeRightTab === "console" && (
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold text-textMuted uppercase tracking-wider flex items-center justify-between">
+                  <span>Console & Standard Error Output:</span>
+                  {execResult?.consoleLogs && execResult.consoleLogs.length > 0 && (
+                    <span className="text-secondaryAccent font-mono">
+                      {execResult.consoleLogs.length} line(s)
+                    </span>
+                  )}
+                </div>
+
+                {execResult?.consoleLogs && execResult.consoleLogs.length > 0 ? (
+                  <pre className="p-3 rounded-xl bg-codeBlock border border-borderSubtle font-mono text-xs text-zinc-200 overflow-x-auto whitespace-pre-wrap leading-relaxed">
+                    {execResult.consoleLogs.join("\n")}
+                  </pre>
+                ) : (
+                  <div className="text-xs text-textMuted/70 font-mono py-3">
+                    No output logged. Use <code className="text-secondaryAccent">print(...)</code> in your code to display debug values here.
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Custom Input Tab */}
+            {activeRightTab === "customInput" && (
               <div className="space-y-3">
                 <div>
                   <label className="text-[11px] font-semibold text-textMuted uppercase tracking-wider block mb-1">
@@ -748,7 +869,7 @@ export default function CodingEditor({
                   <button
                     disabled={isRunning}
                     onClick={handleRunCustomInput}
-                    className="px-3.5 py-1.5 rounded-xl bg-primaryAccent hover:bg-primaryAccent/90 text-white text-xs font-bold shadow-sm transition-all"
+                    className="px-3.5 py-1.5 rounded-xl bg-primaryAccent hover:bg-primaryAccent/90 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
                   >
                     Run with Custom Input
                   </button>

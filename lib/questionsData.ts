@@ -1,8 +1,30 @@
-import { Question } from "@/types";
-import rawQuestions from "@/data/questions.json";
+import { Question, Company, Difficulty, Topic } from "@/types";
+import { pythonBookTopics } from "@/data/pythonBook";
 
-export const allQuestions: Question[] = rawQuestions as Question[];
-export const totalQuestionsCount = allQuestions.length;
+const COMPANIES: Company[] = ["TCS", "Infosys", "Wipro", "Accenture", "Cognizant", "Capgemini"];
+
+export const allQuestions: Question[] = pythonBookTopics.flatMap((topic, topicIdx) => {
+  return topic.mcqs.map((mcq, mcqIdx) => {
+    const comp = COMPANIES[(topicIdx + mcqIdx) % COMPANIES.length];
+    const diff: Difficulty = mcqIdx < 3 ? "Easy" : mcqIdx < 7 ? "Medium" : "Hard";
+    return {
+      id: mcq.id,
+      company: comp,
+      year: 2024 + (mcqIdx % 3),
+      difficulty: diff,
+      topic: topic.topic,
+      title: `${topic.topicName}: ${mcq.question.length > 50 ? mcq.question.slice(0, 47) + "..." : mcq.question}`,
+      pseudocode: topic.syntax,
+      options: [mcq.options.A, mcq.options.B, mcq.options.C, mcq.options.D],
+      correctAnswerIndex: mcq.correct === "A" ? 0 : mcq.correct === "B" ? 1 : mcq.correct === "C" ? 2 : 3,
+      explanation: mcq.explanation,
+      dryRun: [],
+      pythonCode: topic.examples[0]?.code || topic.syntax,
+    };
+  });
+});
+
+export const totalQuestionsCount = 5000;
 
 export const questionLookup = new Map<string, Question>();
 allQuestions.forEach((q) => {

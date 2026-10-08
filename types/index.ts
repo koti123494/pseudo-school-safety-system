@@ -234,3 +234,70 @@ export interface TopicProgress {
 }
 
 export type ThemeMode = "dark" | "light" | "system";
+
+export interface PseudoCodeQuestion {
+  id: string;
+  topic: string;
+  subTopic: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  companies: string[];
+  pseudoCode: string;
+  question: string;
+  teluguQuestion?: string;
+  options: {
+    A: string;
+    B: string;
+    C: string;
+    D: string;
+  };
+  correct: "A" | "B" | "C" | "D";
+  explanation: string;
+  teluguExplanation: string;
+  complexity: string;
+  language: "All";
+}
+
+export interface MockTestResult {
+  id: string;
+  date: string;
+  totalQuestions: number;
+  attemptedCount: number;
+  correctCount: number;
+  wrongCount: number;
+  score: number; // +1 correct, -0.25 wrong
+  accuracy: number;
+  timeSpentSeconds: number;
+  passed: boolean; // cutoff e.g. >= 12
+  companyCutoffName: string;
+  answers: Record<string, string>; // questionId -> chosenOption
+}
+
+export interface CustomTestConfig {
+  id: string;
+  title: string;
+  topics: string[];
+  difficulties: string[];
+  companies: string[];
+  questionCount: number;
+  durationMinutes: number;
+  createdAt: string;
+}
+
+export interface UserCertificate {
+  level: number; // 50, 100, 250, 500, 1000, 2500, 5000
+  title: string;
+  userName: string;
+  date: string;
+  verificationCode: string;
+  solvedCount: number;
+  badge: string;
+}
+
+export interface LeaderboardUser {
+  rank: number;
+  name: string;
+  solved: number;
+  streak: number;
+  location: string;
+  isCurrentUser?: boolean;
+}

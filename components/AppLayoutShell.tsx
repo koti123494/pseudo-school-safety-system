@@ -4,6 +4,7 @@ import React, { useState, Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AppSidebar from "@/components/AppSidebar";
+import TopProgressBar from "@/components/TopProgressBar";
 
 export default function AppLayoutShell({
   children,
@@ -23,6 +24,7 @@ export default function AppLayoutShell({
 
   return (
     <div className="flex min-h-screen relative overflow-x-hidden bg-primaryBg text-textMain transition-colors duration-200">
+      <TopProgressBar />
       {/* Subtle floating background symbols */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden opacity-20">
         <div className="absolute top-[15%] left-[8%] text-secondaryAccent/30 font-mono text-xl select-none floating-petal">

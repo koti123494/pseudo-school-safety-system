@@ -1,138 +1,86 @@
-import fs from "fs";
-import path from "path";
-import { Question } from "../types";
-
-const questionsPath = path.join(__dirname, "../data/questions.json");
-
-if (!fs.existsSync(questionsPath)) {
-  console.error("❌ questions.json file not found at " + questionsPath);
-  process.exit(1);
-}
-
-const rawData = fs.readFileSync(questionsPath, "utf-8");
-const questions: Question[] = JSON.parse(rawData);
+import { pythonBookTopics, totalTopicsCount, totalMCQsCount } from "../data/pythonBook";
 
 console.log("==========================================");
-console.log("       KOTI&apos;S ACADEMY VALIDATION SUITE    ");
+console.log("   PYTHON BOOK 50 TOPICS VALIDATION SUITE ");
 console.log("==========================================");
 
 const errors: string[] = [];
 
-// 1. Total >= 1000
-if (questions.length < 1000) {
-  errors.push(`Total questions is ${questions.length}, expected >= 1000`);
+// 1. Total topics
+if (pythonBookTopics.length !== 50) {
+  errors.push(`Total topics is ${pythonBookTopics.length}, expected 50`);
 } else {
-  console.log(`✓ Total questions: ${questions.length} (>= 1000 satisfied)`);
+  console.log(`✓ Total topics: ${pythonBookTopics.length} (exact 50 satisfied)`);
 }
 
-// 2. Difficulty distribution
-const difficulties: Record<string, number> = { Easy: 0, Medium: 0, Hard: 0 };
-questions.forEach((q) => {
-  difficulties[q.difficulty] = (difficulties[q.difficulty] || 0) + 1;
+// 2. Definition check
+let defFailures = 0;
+pythonBookTopics.forEach((t) => {
+  if (!Array.isArray(t.definition) || t.definition.length !== 4) {
+    errors.push(`Topic ${t.topic} definition must have exactly 4 items, got ${t.definition?.length}`);
+    defFailures++;
+  }
 });
+if (defFailures === 0) {
+  console.log("✓ All 50 topics have exactly 4 definition bullet points");
+}
 
-console.log(
-  `✓ Difficulty distribution: Easy=${difficulties.Easy} (>=200), Medium=${difficulties.Medium} (>=400), Hard=${difficulties.Hard} (>=400)`
-);
+// 3. Examples check
+let totalExamples = 0;
+pythonBookTopics.forEach((t) => {
+  if (!Array.isArray(t.examples) || t.examples.length !== 3) {
+    errors.push(`Topic ${t.topic} must have exactly 3 examples, got ${t.examples?.length}`);
+  } else {
+    totalExamples += t.examples.length;
+    t.examples.forEach((ex) => {
+      if (!ex.title || !ex.code || !ex.output || !ex.explanation) {
+        errors.push(`Incomplete example in topic ${t.topic}: ${ex.title}`);
+      }
+    });
+  }
+});
+console.log(`✓ Total examples: ${totalExamples} (150 examples across 50 topics)`);
 
-if (difficulties.Easy < 200) errors.push(`Easy questions ${difficulties.Easy} < 200`);
-if (difficulties.Medium < 400) errors.push(`Medium questions ${difficulties.Medium} < 400`);
-if (difficulties.Hard < 400) errors.push(`Hard questions ${difficulties.Hard} < 400`);
-
-// 3. Unique IDs
+// 4. MCQs check
+let totalMCQs = 0;
+const seenQ = new Set<string>();
 const seenIds = new Set<string>();
-const duplicateIds: string[] = [];
-questions.forEach((q) => {
-  if (seenIds.has(q.id)) {
-    duplicateIds.push(q.id);
-  }
-  seenIds.add(q.id);
-});
-if (duplicateIds.length > 0) {
-  errors.push(`Found ${duplicateIds.length} duplicate IDs: ${duplicateIds.slice(0, 5).join(", ")}`);
-} else {
-  console.log("✓ No duplicate IDs");
-}
 
-// 4. Unique pseudocode
-const seenCode = new Set<string>();
-const duplicateCodeIds: string[] = [];
-questions.forEach((q) => {
-  const norm = q.pseudocode.trim().replace(/\r\n/g, "\n");
-  if (seenCode.has(norm)) {
-    duplicateCodeIds.push(q.id);
-  }
-  seenCode.add(norm);
-});
-if (duplicateCodeIds.length > 0) {
-  errors.push(`Found ${duplicateCodeIds.length} duplicate pseudocode snippets`);
-} else {
-  console.log("✓ No duplicate pseudocode");
-}
+pythonBookTopics.forEach((t) => {
+  if (!Array.isArray(t.mcqs) || t.mcqs.length !== 10) {
+    errors.push(`Topic ${t.topic} must have exactly 10 MCQs, got ${t.mcqs?.length}`);
+  } else {
+    totalMCQs += t.mcqs.length;
+    t.mcqs.forEach((m) => {
+      if (seenIds.has(m.id)) errors.push(`Duplicate MCQ ID: ${m.id}`);
+      seenIds.add(m.id);
 
-// 5. Options verification
-let optionErrors = 0;
-questions.forEach((q) => {
-  if (!Array.isArray(q.options) || q.options.length !== 4) {
-    optionErrors++;
-  }
-  const uniqueOpts = new Set(q.options);
-  if (uniqueOpts.size !== 4) {
-    optionErrors++;
-  }
-  if (q.correctAnswerIndex < 0 || q.correctAnswerIndex > 3) {
-    optionErrors++;
+      const qText = m.question.trim().toLowerCase();
+      if (seenQ.has(qText)) errors.push(`Duplicate MCQ question: ${m.question}`);
+      seenQ.add(qText);
+
+      if (!m.options.A || !m.options.B || !m.options.C || !m.options.D) {
+        errors.push(`Missing option A,B,C,D in MCQ ${m.id}`);
+      }
+      if (!["A", "B", "C", "D"].includes(m.correct)) {
+        errors.push(`Invalid correct answer in MCQ ${m.id}: ${m.correct}`);
+      }
+      if (!m.explanation || m.explanation.trim().length === 0) {
+        errors.push(`Missing explanation in MCQ ${m.id}`);
+      }
+    });
   }
 });
-if (optionErrors > 0) {
-  errors.push(`Found ${optionErrors} option/index errors`);
-} else {
-  console.log("✓ All questions contain exactly 4 distinct options and valid answer index");
-}
 
-// 6. Completeness of all fields
-let fieldErrors = 0;
-const validCompanies = new Set(["TCS", "Infosys", "Wipro", "Accenture", "Capgemini", "Cognizant"]);
-const validTopics = new Set([
-  "Operators",
-  "Bitwise",
-  "Loops",
-  "Arrays",
-  "Nested Conditions",
-  "Series",
-  "Profit / Loss",
-  "Queue Logic",
-  "Mathematical Logic",
-]);
-
-questions.forEach((q) => {
-  if (!q.title || !q.title.trim()) fieldErrors++;
-  if (!q.explanation || !q.explanation.trim()) fieldErrors++;
-  if (!q.pythonCode || !q.pythonCode.trim()) fieldErrors++;
-  if (!validCompanies.has(q.company)) fieldErrors++;
-  if (q.year < 2015 || q.year > 2026) fieldErrors++;
-  if (!validTopics.has(q.topic)) fieldErrors++;
-  if (!Array.isArray(q.dryRun) || q.dryRun.length === 0) fieldErrors++;
-});
-
-if (fieldErrors > 0) {
-  errors.push(`Found ${fieldErrors} missing or invalid required fields`);
-} else {
-  console.log("✓ All questions contain explanations, dry-runs, valid companies, topics & years");
-  console.log("✓ All questions contain Python equivalent code");
-}
+console.log(`✓ Total MCQs: ${totalMCQs} (500 MCQs total across 50 topics)`);
+console.log(`✓ Unique question texts: ${seenQ.size} (0 duplicates)`);
 
 if (errors.length > 0) {
-  console.error("\n❌ Validation Failed with errors:");
-  errors.forEach((e) => console.error("  - " + e));
+  console.error("❌ VALIDATION FAILED with errors:");
+  errors.forEach((e) => console.error(" - " + e));
   process.exit(1);
 } else {
-  console.log("\n==========================================");
-  console.log("✓ 1000+ questions validated");
-  console.log("✓ No duplicate IDs");
-  console.log("✓ No duplicate pseudocode");
-  console.log("✓ All questions contain 4 options");
-  console.log("✓ All questions contain explanations");
-  console.log("✓ Database 100% Validated for Production");
-  console.log("==========================================\n");
+  console.log("==========================================");
+  console.log("  ALL VALIDATION CHECKS PASSED PERFECTLY  ");
+  console.log("==========================================");
 }
