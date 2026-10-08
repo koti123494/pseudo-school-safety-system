@@ -100,6 +100,7 @@ export default function MockTestRunner({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, questions, answers]);
 
   const handleSubmitTest = () => {

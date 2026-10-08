@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { GraduationCap, Play, BookOpen } from "lucide-react";
 
@@ -14,10 +15,13 @@ export default function AboutKoti() {
           {/* Founder Avatar with subtle glowing frame */}
           <div className="relative shrink-0">
             <div className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 rounded-2xl overflow-hidden border-2 border-secondaryAccent/60 shadow-lg shadow-blue-500/20 bg-cardBg">
-              <img
+              <Image
                 src="/founder_candidate1.jpg"
-                alt="Koti - Founder of Koti&apos;s Python Academy"
+                alt="Koti - Founder of Koti's Python Academy"
+                width={176}
+                height={176}
                 className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-300"
+                priority
               />
             </div>
             <div className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full bg-blue-600 text-[10px] font-bold text-white shadow-md border border-white/20">

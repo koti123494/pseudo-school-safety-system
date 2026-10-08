@@ -107,7 +107,7 @@ function CodingPageContent() {
       status: selectedStatus,
       search: searchQuery,
     });
-  }, [selectedTopic, selectedCompany, selectedDifficulty, selectedStatus, searchQuery, solvedIds, bookmarkIds]);
+  }, [selectedTopic, selectedCompany, selectedDifficulty, selectedStatus, searchQuery]);
 
   // Current problem
   const currentProblem: CodingProblem | undefined = useMemo(() => {

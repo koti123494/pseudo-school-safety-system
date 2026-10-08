@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
-export default function TopProgressBar() {
+function ProgressBarInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [progress, setProgress] = useState(0);
@@ -53,5 +53,13 @@ export default function TopProgressBar() {
         }}
       />
     </div>
+  );
+}
+
+export default function TopProgressBar() {
+  return (
+    <React.Suspense fallback={null}>
+      <ProgressBarInner />
+    </React.Suspense>
   );
 }

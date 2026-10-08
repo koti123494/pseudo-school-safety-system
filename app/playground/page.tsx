@@ -60,7 +60,7 @@ function PlaygroundContent() {
       setCode(currentExample.code);
       setOutput(currentExample.output);
     }
-  }, [selectedTopicId, exampleIndex, currentTopic]);
+  }, [currentExample]);
 
   const handleRun = async () => {
     setIsRunning(true);

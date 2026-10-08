@@ -338,7 +338,7 @@ export default function CertificateViewer() {
               and attained the proficiency title:
             </p>
             <h3 className="text-xl sm:text-2xl font-bold text-accentPurple">
-              "{selectedMilestone.title}"
+              &quot;{selectedMilestone.title}&quot;
             </h3>
             <p className="text-[11px] text-textMuted font-mono">
               Curriculum: Arrays • Strings • Stack • Queue • Dynamic Programming • TCS/Infosys PYQs
